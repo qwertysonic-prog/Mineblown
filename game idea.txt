@@ -1,0 +1,15 @@
+Please flesh out this game idea, and help me with anything else I may not be thinking of. Maybe other powerups?
+
+I want to make a 2-player minesweeper-like game. The play-field is one big minesweeper map and both players start on opposite sides. I want them to be able to move one square at a time and either reveal the square or plant a flag. When a square is revealed it is claimed and turns the color of the player who reveals it.
+
+If a mine is accidentally revealed then that square and the adjacent squares turn dark gray and are unable to be claimed by that player. The player is also stunned and experiences a wait time before he can continue playing.
+
+When a mine is flagged it gets loaded into an item list which can be used as an attack against the other player. When it is used, the mine blows up a few squares of the other player's maps turning them the color of the attacking player. It also stuns them as if they had accidentally revealed a mine themselves.
+
+The game ends when all the squares have been claimed. The score is based on the number of claimed squares.
+
+
+handicap for better/worse minesweeper players
+1. Movement Speed
+2. Have more powerups generate on the side of the weaker player
+3. 

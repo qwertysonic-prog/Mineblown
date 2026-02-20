@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mineblown</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Splash Screen -->
+  <div id="splash-screen">
+    <img src="logo image 1920x1080.png" alt="Mineblown">
+  </div>
+
+  <!-- Main Menu -->
+  <div id="menu-screen" style="display:none">
+    <div id="menu-main" class="menu-panel">
+      <h1 class="menu-title">Mineblown</h1>
+      <div class="menu-buttons">
+        <button class="menu-btn" onclick="startGame()">Start 2P Game</button>
+        <button class="menu-btn" onclick="showMenu('single-player')">Single Player</button>
+        <button class="menu-btn" onclick="showMenu('online')">Online</button>
+        <button class="menu-btn" onclick="showMenu('controls')">Controls</button>
+        <button class="menu-btn" onclick="showMenu('about')">About</button>
+      </div>
+      <div id="menu-audio-toggles">
+        <button id="sfx-toggle" class="audio-btn active" onclick="toggleSfx()">SFX</button>
+        <button id="music-toggle" class="audio-btn muted" onclick="toggleMusic()">♪ Music</button>
+      </div>
+    </div>
+
+    <div id="menu-controls" class="menu-panel" style="display:none">
+      <h2 class="menu-subtitle">Controls</h2>
+      <div class="menu-content">
+        <div class="controls-column">
+          <h3 class="p1">Player 1</h3>
+          <p><strong>WASD</strong> — Move</p>
+          <p><strong>E</strong> — Reveal tile</p>
+          <p><strong>Q</strong> — Flag tile</p>
+          <p><strong>1</strong> — Random mine attack</p>
+          <p><strong>2</strong> — Precision mine attack</p>
+        </div>
+        <div class="controls-column">
+          <h3 class="p2">Player 2</h3>
+          <p><strong>Arrows</strong> — Move</p>
+          <p><strong>/</strong> — Reveal tile</p>
+          <p><strong>.</strong> — Flag tile</p>
+          <p><strong>9</strong> — Random mine attack</p>
+          <p><strong>0</strong> — Precision mine attack</p>
+        </div>
+      </div>
+      <button class="menu-btn back-btn" onclick="showMenu('main')">Back</button>
+    </div>
+
+    <div id="menu-about" class="menu-panel" style="display:none">
+      <h2 class="menu-subtitle">About</h2>
+      <div class="menu-content about-text">
+        <p><strong>Mineblown</strong> is a real-time, 2-player competitive Minesweeper-style game played on a single shared board.</p>
+        <p>Move around the grid, reveal tiles, claim territory, collect mines from correct flags, and use them to attack your opponent.</p>
+        <p>The player who controls the most tiles when the board is fully revealed wins! Think of this as Minesweeper meets Splatoon.</p>
+        <p class="about-footer">Genre: Competitive Puzzle / Real-Time Strategy / Territory Control</p>
+      </div>
+      <button class="menu-btn back-btn" onclick="showMenu('main')">Back</button>
+    </div>
+
+    <div id="menu-single-player" class="menu-panel" style="display:none">
+      <h2 class="menu-subtitle">Single Player</h2>
+      <div class="menu-content">
+        <p style="color: #bbb; line-height: 1.5;">Play against the computer! You control Player 2 (red) using arrow keys. The AI controls Player 1 (blue).</p>
+      </div>
+      <div class="difficulty-row">
+        <button class="menu-btn" onclick="startSinglePlayer('practice')">Practice</button>
+        <button class="menu-btn" onclick="startSinglePlayer('easy')">Easy</button>
+      </div>
+      <div class="difficulty-row">
+        <button class="menu-btn" onclick="startSinglePlayer('medium')">Medium</button>
+        <button class="menu-btn" onclick="startSinglePlayer('hard')">Hard</button>
+      </div>
+      <button class="menu-btn back-btn" onclick="showMenu('main')">Back</button>
+    </div>
+
+    <div id="menu-online" class="menu-panel" style="display:none">
+      <h2 class="menu-subtitle">Online Play</h2>
+      <div class="menu-buttons">
+        <button class="menu-btn" onclick="startOnlineGame('quickmatch')">Quick Match</button>
+        <button class="menu-btn" onclick="startOnlineGame('create')">Create Room</button>
+      </div>
+      <div style="display:flex; gap:8px; justify-content:center; align-items:center; margin-top:4px;">
+        <input id="room-code-input" class="room-code-input" maxlength="4"
+               placeholder="CODE" oninput="this.value=this.value.toUpperCase()">
+        <button class="menu-btn" style="padding:12px 16px;"
+                onclick="joinRoomOnline(document.getElementById('room-code-input').value)">Join Room</button>
+      </div>
+      <button class="menu-btn back-btn" onclick="showMenu('main')">Back</button>
+    </div>
+  </div>
+
+  <!-- Online waiting / status screen -->
+  <div id="online-status-screen"
+       style="display:none; justify-content:center; align-items:center; width:100%; height:100vh;">
+    <div class="menu-panel">
+      <div id="online-status-text"
+           style="font-size:18px; color:#eee; text-align:center; min-height:28px;">Connecting...</div>
+      <div id="online-room-code"
+           style="display:none; font-size:48px; font-weight:bold; letter-spacing:12px;
+                  color:#4fc3f7; text-align:center; margin:8px 0;"></div>
+      <div id="online-join-input" style="display:none; gap:8px; justify-content:center;">
+        <input id="retry-code-input" class="room-code-input" maxlength="4"
+               placeholder="CODE" oninput="this.value=this.value.toUpperCase()">
+        <button class="menu-btn" style="padding:12px 16px;"
+                onclick="joinRoomOnline(document.getElementById('retry-code-input').value)">Join</button>
+      </div>
+      <button class="menu-btn back-btn" onclick="cancelOnline()">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Game UI (hidden until game starts) -->
+  <div id="game-ui" style="display:none">
+    <div id="top-bar">
+      <div class="player-info" id="p1-info">
+        <span class="player-label p1">Player 1</span>
+        <span id="p1-score">Tiles: 0</span>
+        <span id="p1-mines" class="mine-count p1">Mines: 0</span>
+        <span id="p1-cooldown" class="cooldown-indicator"></span>
+        <span id="p1-powerups" class="powerup-inventory"></span>
+      </div>
+      <div id="game-status"></div>
+      <div class="player-info" id="p2-info">
+        <span class="player-label p2">Player 2</span>
+        <span id="p2-score">Tiles: 0</span>
+        <span id="p2-mines" class="mine-count p2">Mines: 0</span>
+        <span id="p2-cooldown" class="cooldown-indicator"></span>
+        <span id="p2-powerups" class="powerup-inventory"></span>
+      </div>
+    </div>
+
+    <canvas id="game-canvas"></canvas>
+
+    <div id="bottom-bar">
+      <div class="controls-hint">
+        <strong>P1:</strong> WASD move · E reveal · Q flag · 1 random atk · 2 precision atk
+      </div>
+      <div class="controls-hint">
+        <strong>P2:</strong> Arrows move · / reveal · . flag · 9 random atk · 0 precision atk
+      </div>
+    </div>
+
+    <!-- Touch Controls (shown only on touch-capable devices) -->
+    <div id="touch-controls">
+      <!-- P1 Panel (hidden in single-player) -->
+      <div id="touch-p1" class="touch-panel">
+        <div>
+          <span class="touch-panel-label">P1</span>
+          <div class="touch-dpad">
+            <button class="touch-btn dpad-btn" data-player="1" data-action="up">▲</button>
+            <div class="dpad-mid-row">
+              <button class="touch-btn dpad-btn" data-player="1" data-action="left">◀</button>
+              <div class="dpad-center"></div>
+              <button class="touch-btn dpad-btn" data-player="1" data-action="right">▶</button>
+            </div>
+            <button class="touch-btn dpad-btn" data-player="1" data-action="down">▼</button>
+          </div>
+        </div>
+        <div class="touch-actions">
+          <button class="touch-btn action-btn p1-action" data-player="1" data-action="reveal">Rev</button>
+          <button class="touch-btn action-btn p1-action" data-player="1" data-action="flag">Flag</button>
+          <button class="touch-btn action-btn p1-action" data-player="1" data-action="rndatk">Rnd</button>
+          <button class="touch-btn action-btn p1-action" data-player="1" data-action="precatk">Pre</button>
+        </div>
+      </div>
+      <!-- P2 Panel (always shown) -->
+      <div id="touch-p2" class="touch-panel">
+        <div>
+          <span class="touch-panel-label">P2</span>
+          <div class="touch-dpad">
+            <button class="touch-btn dpad-btn" data-player="2" data-action="up">▲</button>
+            <div class="dpad-mid-row">
+              <button class="touch-btn dpad-btn" data-player="2" data-action="left">◀</button>
+              <div class="dpad-center"></div>
+              <button class="touch-btn dpad-btn" data-player="2" data-action="right">▶</button>
+            </div>
+            <button class="touch-btn dpad-btn" data-player="2" data-action="down">▼</button>
+          </div>
+        </div>
+        <div class="touch-actions">
+          <button class="touch-btn action-btn p2-action" data-player="2" data-action="reveal">Rev</button>
+          <button class="touch-btn action-btn p2-action" data-player="2" data-action="flag">Flag</button>
+          <button class="touch-btn action-btn p2-action" data-player="2" data-action="rndatk">Rnd</button>
+          <button class="touch-btn action-btn p2-action" data-player="2" data-action="precatk">Pre</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="audio-toggles">
+      <button id="sfx-toggle-game" class="audio-btn active" onclick="toggleSfx()">SFX</button>
+      <button id="music-toggle-game" class="audio-btn muted" onclick="toggleMusic()">♪ Music</button>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+  <script>
+    (function () {
+      var splash = document.getElementById('splash-screen');
+      var menu   = document.getElementById('menu-screen');
+      setTimeout(function () {
+        splash.classList.add('fade-out');
+        menu.style.display = 'flex';
+        setTimeout(function () { splash.style.display = 'none'; }, 650);
+      }, 2000);
+    })();
+  </script>
+</body>
+</html>
