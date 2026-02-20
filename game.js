@@ -96,7 +96,7 @@ function startGame() {
 
   const bottomBar = document.getElementById('bottom-bar');
   if (bottomBar) {
-    if (navigator.maxTouchPoints > 0) {
+    if (isMobile) {
       bottomBar.innerHTML = '';
     } else if (singlePlayer || onlineMode) {
       bottomBar.innerHTML = '<div class="controls-hint"><strong>You:</strong> Arrows move · / reveal · . flag · 9 random atk · 0 precision atk</div>';
@@ -105,7 +105,7 @@ function startGame() {
     }
   }
 
-  if (navigator.maxTouchPoints > 0) {
+  if (isMobile) {
     setupTouchControls();
     document.getElementById('touch-controls').style.display = 'flex';
     document.getElementById('touch-p1').style.display = singlePlayer ? 'none' : 'flex';
@@ -539,6 +539,7 @@ function drawParticles() {
 const keysDown = {};
 
 // --- Touch Controls ---
+const isMobile = isMobile && window.matchMedia('(pointer: coarse)').matches;
 let touchControlsInitialized = false;
 const activeTouches = new Map(); // touchId → { type:'move'|'action', key|btn }
 
