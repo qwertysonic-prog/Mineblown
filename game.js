@@ -98,7 +98,7 @@ function startGame() {
   if (bottomBar) {
     if (navigator.maxTouchPoints > 0) {
       bottomBar.innerHTML = '';
-    } else if (singlePlayer) {
+    } else if (singlePlayer || onlineMode) {
       bottomBar.innerHTML = '<div class="controls-hint"><strong>You:</strong> Arrows move · / reveal · . flag · 9 random atk · 0 precision atk</div>';
     } else {
       bottomBar.innerHTML = '<div class="controls-hint"><strong>P1:</strong> WASD move · E reveal · Q flag · 1 random atk · 2 precision atk</div><div class="controls-hint"><strong>P2:</strong> Arrows move · / reveal · . flag · 9 random atk · 0 precision atk</div>';
@@ -1449,47 +1449,42 @@ document.addEventListener('keydown', (e) => {
 
   if (!gameStarted || gameOver) return;
 
-  // P1 reveal (E) and flag (Q) — skip when AI controls P1 or when online as P2
-  if (!singlePlayer && (!onlineMode || localPlayerNum === 1)) {
-    if (e.key === 'e' || e.key === 'E') {
-      revealTile(players[0].x, players[0].y, players[0]);
-      if (onlineMode) sendGameEvent({ type: 'reveal', x: players[0].x, y: players[0].y });
+  if (onlineMode) {
+    // Online: both players use P2 controls (/ . 9 0)
+    const lp = players[localPlayerNum - 1];
+    if (e.key === '/') {
+      e.preventDefault();
+      revealTile(lp.x, lp.y, lp);
+      sendGameEvent({ type: 'reveal', x: lp.x, y: lp.y });
     }
-    if (e.key === 'q' || e.key === 'Q') {
-      flagTile(players[0].x, players[0].y, players[0]);
-      if (onlineMode) sendGameEvent({ type: 'flag', x: players[0].x, y: players[0].y });
+    if (e.key === '.') {
+      flagTile(lp.x, lp.y, lp);
+      sendGameEvent({ type: 'flag', x: lp.x, y: lp.y });
+    }
+    if (e.key === '9') {
+      randomMineAttack(lp); // rndatk event sent inside function
+    }
+    if (e.key === '0') {
+      precisionMineAttack(lp);
+      sendGameEvent({ type: 'precatk' });
+    }
+  } else {
+    // Offline P1 controls: E reveal, Q flag, 1/2 attacks
+    if (!singlePlayer) {
+      if (e.key === 'e' || e.key === 'E') revealTile(players[0].x, players[0].y, players[0]);
+      if (e.key === 'q' || e.key === 'Q') flagTile(players[0].x, players[0].y, players[0]);
+      if (e.key === '1') randomMineAttack(players[0]);
+      if (e.key === '2') precisionMineAttack(players[0]);
     }
 
-    // P1 attacks: 1 = random mine, 2 = precision mine
-    if (e.key === '1') {
-      randomMineAttack(players[0]); // rndatk event sent inside function
-    }
-    if (e.key === '2') {
-      precisionMineAttack(players[0]);
-      if (onlineMode) sendGameEvent({ type: 'precatk' });
-    }
-  }
-
-  // P2 reveal (/) and flag (.) — skip when online as P1
-  if (!onlineMode || localPlayerNum === 2) {
+    // Offline P2 controls: / reveal, . flag, 9/0 attacks
     if (e.key === '/') {
       e.preventDefault();
       revealTile(players[1].x, players[1].y, players[1]);
-      if (onlineMode) sendGameEvent({ type: 'reveal', x: players[1].x, y: players[1].y });
     }
-    if (e.key === '.') {
-      flagTile(players[1].x, players[1].y, players[1]);
-      if (onlineMode) sendGameEvent({ type: 'flag', x: players[1].x, y: players[1].y });
-    }
-
-    // P2 attacks: 9 = random mine, 0 = precision mine
-    if (e.key === '9') {
-      randomMineAttack(players[1]); // rndatk event sent inside function
-    }
-    if (e.key === '0') {
-      precisionMineAttack(players[1]);
-      if (onlineMode) sendGameEvent({ type: 'precatk' });
-    }
+    if (e.key === '.') flagTile(players[1].x, players[1].y, players[1]);
+    if (e.key === '9') randomMineAttack(players[1]);
+    if (e.key === '0') precisionMineAttack(players[1]);
   }
 
 });
@@ -1641,19 +1636,25 @@ window.addEventListener('resize', scaleCanvas);
 function processMovementInput() {
   if (!gameStarted || gameOver) return;
 
-  // P1: WASD — skip when AI controls P1, or when online as P2
-  if (!singlePlayer && (!onlineMode || localPlayerNum === 1)) {
-    if (keysDown['w'] || keysDown['W']) tryMove(players[0], 0, -1);
-    if (keysDown['s'] || keysDown['S']) tryMove(players[0], 0, 1);
-    if (keysDown['a'] || keysDown['A']) tryMove(players[0], -1, 0);
-    if (keysDown['d'] || keysDown['D']) tryMove(players[0], 1, 0);
-  }
-
-  // P2: Arrow keys — skip when online as P1
-  if (!onlineMode || localPlayerNum === 2) {
-    if (keysDown['ArrowUp']) tryMove(players[1], 0, -1);
-    if (keysDown['ArrowDown']) tryMove(players[1], 0, 1);
-    if (keysDown['ArrowLeft']) tryMove(players[1], -1, 0);
+  if (onlineMode) {
+    // Both players use arrow keys in online mode
+    const lp = players[localPlayerNum - 1];
+    if (keysDown['ArrowUp'])    tryMove(lp, 0, -1);
+    if (keysDown['ArrowDown'])  tryMove(lp, 0, 1);
+    if (keysDown['ArrowLeft'])  tryMove(lp, -1, 0);
+    if (keysDown['ArrowRight']) tryMove(lp, 1, 0);
+  } else {
+    // P1: WASD — skip when AI controls P1
+    if (!singlePlayer) {
+      if (keysDown['w'] || keysDown['W']) tryMove(players[0], 0, -1);
+      if (keysDown['s'] || keysDown['S']) tryMove(players[0], 0, 1);
+      if (keysDown['a'] || keysDown['A']) tryMove(players[0], -1, 0);
+      if (keysDown['d'] || keysDown['D']) tryMove(players[0], 1, 0);
+    }
+    // P2: Arrow keys
+    if (keysDown['ArrowUp'])    tryMove(players[1], 0, -1);
+    if (keysDown['ArrowDown'])  tryMove(players[1], 0, 1);
+    if (keysDown['ArrowLeft'])  tryMove(players[1], -1, 0);
     if (keysDown['ArrowRight']) tryMove(players[1], 1, 0);
   }
 }
