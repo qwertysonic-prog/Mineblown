@@ -83,7 +83,7 @@ function startGame() {
   gameStarted = true;
   gameOver = false;
   winner = null;
-  rumbleTiles = [];
+  rumbleTiles.clear();
   lastPowerUpSpawn = performance.now();
   generateBoard();
   updateStatusText();
@@ -460,23 +460,21 @@ let aiSafeMemory = [];              // deduced safe positions
 let aiLastAnalysis = 0;
 
 // --- Rumble Effects ---
-let rumbleTiles = []; // { x, y, until }
+let rumbleTiles = new Map(); // "x,y" → until timestamp
 const RUMBLE_DURATION = 1000; // ms
 const RUMBLE_INTENSITY = 3; // pixels
 
 function addRumble(x, y) {
-  rumbleTiles.push({ x, y, until: performance.now() + RUMBLE_DURATION });
+  rumbleTiles.set(`${x},${y}`, performance.now() + RUMBLE_DURATION);
 }
 
 function getRumbleOffset(x, y) {
-  const now = performance.now();
-  for (const r of rumbleTiles) {
-    if (r.x === x && r.y === y && now < r.until) {
-      return {
-        dx: (Math.random() - 0.5) * 2 * RUMBLE_INTENSITY,
-        dy: (Math.random() - 0.5) * 2 * RUMBLE_INTENSITY
-      };
-    }
+  const until = rumbleTiles.get(`${x},${y}`);
+  if (until && performance.now() < until) {
+    return {
+      dx: (Math.random() - 0.5) * 2 * RUMBLE_INTENSITY,
+      dy: (Math.random() - 0.5) * 2 * RUMBLE_INTENSITY
+    };
   }
   return { dx: 0, dy: 0 };
 }
@@ -1981,6 +1979,7 @@ function updateUI() {
   }
 }
 
+let lastStatusUpdate = 0;
 function updateStatusText() {
   const el = document.getElementById('game-status');
   if (!el) return;
@@ -1991,7 +1990,11 @@ function updateStatusText() {
       el.textContent = `Game Over — ${label} Win${winner === 2 && singlePlayer ? '' : 's'}!`;
     }
   } else if (gameStarted) {
-    el.textContent = `Tiles remaining: ${totalSafeTiles - countResolvedSafeTiles()}`;
+    const now = performance.now();
+    if (now - lastStatusUpdate > 100) {
+      lastStatusUpdate = now;
+      el.textContent = `Tiles remaining: ${totalSafeTiles - countResolvedSafeTiles()}`;
+    }
   }
 }
 
@@ -2028,7 +2031,7 @@ function processStunTeleports() {
 function gameLoop() {
   // Clean up expired rumbles
   const now = performance.now();
-  rumbleTiles = rumbleTiles.filter(r => now < r.until);
+  for (const [key, until] of rumbleTiles) { if (now >= until) rumbleTiles.delete(key); }
 
   processStunTeleports();
   trySpawnPowerUp();
