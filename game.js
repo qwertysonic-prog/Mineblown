@@ -539,7 +539,7 @@ function drawParticles() {
 const keysDown = {};
 
 // --- Touch Controls ---
-const isMobile = isMobile && window.matchMedia('(pointer: coarse)').matches;
+const isMobile = navigator.maxTouchPoints > 0 && window.matchMedia('(pointer: coarse)').matches;
 let touchControlsInitialized = false;
 const activeTouches = new Map(); // touchId → { type:'move'|'action', key|btn }
 
