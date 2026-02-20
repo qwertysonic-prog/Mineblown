@@ -10,7 +10,7 @@ let sfxMuted = false;
 let musicMuted = true;
 
 // --- Background Music ---
-const bgMusic = new Audio('music/BG Music (Wii Shop Channel).mp3');
+const bgMusic = new Audio('music/bg-music.mp3');
 bgMusic.loop = true;
 bgMusic.volume = 0.4;
 
