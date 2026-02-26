@@ -83,6 +83,8 @@ function startGame() {
   gameStarted = true;
   gameOver = false;
   winner = null;
+  gameStartTime = performance.now();
+  gameFinishTime = 0;
   rumbleTiles.clear();
   lastPowerUpSpawn = performance.now();
   generateBoard();
@@ -428,6 +430,15 @@ const players = [
 let gameStarted = false;
 let gameOver = false;
 let winner = null;
+let gameStartTime = 0;
+let gameFinishTime = 0;
+
+function formatTime(ms) {
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
 
 // --- Power-Up State ---
 let lastPowerUpSpawn = 0;
@@ -1420,6 +1431,7 @@ function checkGameEnd() {
 
 function endGame() {
   gameOver = true;
+  gameFinishTime = performance.now();
   clearTouchMovementKeys();
   if (players[0].score > players[1].score) {
     winner = 1;
@@ -1969,9 +1981,15 @@ function drawGameOverOverlay() {
   ctx.font = '16px sans-serif';
   ctx.fillText(`${p1Label}: ${players[0].score}  —  ${p2Label}: ${players[1].score}`, centerX, centerY + 10);
 
+  if (singlePlayer && gameFinishTime) {
+    ctx.fillStyle = '#888';
+    ctx.font = '15px sans-serif';
+    ctx.fillText(`Time: ${formatTime(gameFinishTime - gameStartTime)}`, centerX, centerY + 35);
+  }
+
   ctx.fillStyle = '#777';
   ctx.font = '14px sans-serif';
-  ctx.fillText('Press SPACE to return to menu', centerX, centerY + 45);
+  ctx.fillText('Press SPACE to return to menu', centerX, centerY + (singlePlayer ? 60 : 45));
 }
 
 
@@ -2012,6 +2030,7 @@ function updateUI() {
 let lastStatusUpdate = 0;
 function updateStatusText() {
   const el = document.getElementById('game-status');
+  const timerEl = document.getElementById('game-timer');
   if (!el) return;
   if (gameOver) {
     if (winner === 0) el.textContent = "Game Over — Tie!";
@@ -2019,11 +2038,13 @@ function updateStatusText() {
       const label = singlePlayer ? (winner === 1 ? 'AI' : 'You') : `Player ${winner}`;
       el.textContent = `Game Over — ${label} Win${winner === 2 && singlePlayer ? '' : 's'}!`;
     }
+    if (timerEl) timerEl.textContent = '';
   } else if (gameStarted) {
     const now = performance.now();
     if (now - lastStatusUpdate > 100) {
       lastStatusUpdate = now;
       el.textContent = `Tiles remaining: ${totalSafeTiles - countResolvedSafeTiles()}`;
+      if (timerEl && singlePlayer) timerEl.textContent = formatTime(now - gameStartTime);
     }
   }
 }
