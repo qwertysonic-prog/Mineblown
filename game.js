@@ -565,7 +565,7 @@ function onTouchStart(e) {
     if (!btn) continue;
     const playerIndex = parseInt(btn.dataset.player, 10) - 1;
     const action = btn.dataset.action;
-    const player = players[playerIndex];
+    const player = onlineMode ? players[localPlayerNum - 1] : players[playerIndex];
     const moveKey = TOUCH_MOVEMENT_KEYS[`${btn.dataset.player}-${action}`];
     if (moveKey) {
       keysDown[moveKey] = true;
@@ -576,10 +576,21 @@ function onTouchStart(e) {
       btn.classList.add('pressed');
       if (!gameStarted || gameOver) continue;
       switch (action) {
-        case 'reveal':  revealTile(player.x, player.y, player); break;
-        case 'flag':    flagTile(player.x, player.y, player);   break;
-        case 'rndatk':  randomMineAttack(player);                break;
-        case 'precatk': precisionMineAttack(player);             break;
+        case 'reveal':
+          revealTile(player.x, player.y, player);
+          if (onlineMode) sendGameEvent({ type: 'reveal', x: player.x, y: player.y });
+          break;
+        case 'flag':
+          flagTile(player.x, player.y, player);
+          if (onlineMode) sendGameEvent({ type: 'flag', x: player.x, y: player.y });
+          break;
+        case 'rndatk':
+          randomMineAttack(player); // rndatk event sent inside function
+          break;
+        case 'precatk':
+          precisionMineAttack(player);
+          if (onlineMode) sendGameEvent({ type: 'precatk' });
+          break;
       }
     }
   }
