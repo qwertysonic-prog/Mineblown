@@ -86,7 +86,7 @@ function startGame() {
   gameStartTime = performance.now();
   gameFinishTime = 0;
   resolvedSafeTileCount = 0;
-  rumbleTiles.clear();
+  rumbleUntil = new Float64Array(ROWS * COLS);
   lastPowerUpSpawn = performance.now();
   generateBoard();
   updateStatusText();
@@ -473,23 +473,12 @@ let aiSafeMemory = [];              // deduced safe positions
 let aiLastAnalysis = 0;
 
 // --- Rumble Effects ---
-let rumbleTiles = new Map(); // "x,y" → until timestamp
+let rumbleUntil = null; // Float64Array(ROWS * COLS) — until timestamps, 0 = inactive
 const RUMBLE_DURATION = 1000; // ms
 const RUMBLE_INTENSITY = 3; // pixels
 
 function addRumble(x, y) {
-  rumbleTiles.set(`${x},${y}`, performance.now() + RUMBLE_DURATION);
-}
-
-function getRumbleOffset(x, y) {
-  const until = rumbleTiles.get(`${x},${y}`);
-  if (until && performance.now() < until) {
-    return {
-      dx: (Math.random() - 0.5) * 2 * RUMBLE_INTENSITY,
-      dy: (Math.random() - 0.5) * 2 * RUMBLE_INTENSITY
-    };
-  }
-  return { dx: 0, dy: 0 };
+  rumbleUntil[y * COLS + x] = performance.now() + RUMBLE_DURATION;
 }
 
 // --- Explosion Particles ---
@@ -1703,7 +1692,13 @@ function processMovementInput() {
 // Rendering
 // ============================================================
 
+let renderNow = 0;
+let firewallShimmer = 0;
+
 function render() {
+  renderNow = performance.now();
+  firewallShimmer = 0.5 + 0.5 * Math.sin(renderNow / 500);
+
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   // Draw tiles
@@ -1727,11 +1722,11 @@ function render() {
 }
 
 function drawTile(x, y) {
-  const now = performance.now();
+  const now = renderNow;
   const tile = board[y][x];
-  const rumble = getRumbleOffset(x, y);
-  const px = x * TILE_SIZE + rumble.dx;
-  const py = y * TILE_SIZE + rumble.dy;
+  const rumbleExp = rumbleUntil[y * COLS + x];
+  const px = x * TILE_SIZE + (rumbleExp > now ? (Math.random() - 0.5) * 2 * RUMBLE_INTENSITY : 0);
+  const py = y * TILE_SIZE + (rumbleExp > now ? (Math.random() - 0.5) * 2 * RUMBLE_INTENSITY : 0);
 
   // Reveal pop-in scale animation
   const elapsed = now - tile.revealAnimStart;
@@ -1837,17 +1832,9 @@ function drawTile(x, y) {
       }
 
       // Firewall metallic shine
-      if (tile.owner > 0) {
-        const ownerPlayer = players[tile.owner - 1];
-        if (now < ownerPlayer.firewallUntil) {
-          const shimmer = 0.5 + 0.5 * Math.sin(now / 500 + x * 0.3 + y * 0.3);
-          const grad = ctx.createLinearGradient(px, py, px + TILE_SIZE, py + TILE_SIZE);
-          grad.addColorStop(0, `rgba(255, 255, 255, ${0.05 + 0.15 * shimmer})`);
-          grad.addColorStop(0.5, `rgba(200, 220, 255, ${0.1 + 0.2 * shimmer})`);
-          grad.addColorStop(1, `rgba(255, 255, 255, ${0.05 + 0.15 * shimmer})`);
-          ctx.fillStyle = grad;
-          ctx.fillRect(px + 1, py + 1, TILE_SIZE - 2, TILE_SIZE - 2);
-        }
+      if (tile.owner > 0 && now < players[tile.owner - 1].firewallUntil) {
+        ctx.fillStyle = `rgba(200, 220, 255, ${0.08 + 0.12 * firewallShimmer})`;
+        ctx.fillRect(px + 1, py + 1, TILE_SIZE - 2, TILE_SIZE - 2);
       }
 
       // Draw number
@@ -2079,10 +2066,6 @@ function processStunTeleports() {
 }
 
 function gameLoop() {
-  // Clean up expired rumbles
-  const now = performance.now();
-  for (const [key, until] of rumbleTiles) { if (now >= until) rumbleTiles.delete(key); }
-
   processStunTeleports();
   trySpawnPowerUp();
   processPendingPowerUps();
