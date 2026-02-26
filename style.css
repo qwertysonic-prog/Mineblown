@@ -452,12 +452,6 @@ body.touch-device {
 .p1-action.pressed { background: #1a4a6a; }
 .p2-action.pressed { background: #6a1a1a; }
 
-/* Online mode: P2 panel re-skinned as P1 (blue) */
-#touch-p2.online-as-p1 { border-color: #1e6b8a; }
-#touch-p2.online-as-p1 .touch-panel-label { color: #4fc3f7; }
-#touch-p2.online-as-p1 .action-btn { border-color: #1e6b8a; color: #4fc3f7; }
-#touch-p2.online-as-p1 .action-btn.pressed { background: #1a4a6a; }
-
 @media (max-width: 720px) {
   #touch-controls {
     flex-direction: column;
