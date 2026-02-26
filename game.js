@@ -111,7 +111,7 @@ function startGame() {
   if (isMobile) {
     setupTouchControls();
     document.getElementById('touch-controls').style.display = 'flex';
-    document.getElementById('touch-p1').style.display = singlePlayer ? 'none' : 'flex';
+    document.getElementById('touch-p1').style.display = (singlePlayer || onlineMode) ? 'none' : 'flex';
   }
 
   if (!gameLoopRunning) {
