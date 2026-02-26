@@ -1013,7 +1013,7 @@ function trySpawnPowerUp() {
   if (onlineMode) sendGameEvent({ type: 'powerup_spawn', x: spot.x, y: spot.y, puType: type });
 }
 
-function applyPowerUp(player, type) {
+function applyPowerUp(player, type, forcedCenter = null) {
   if (type === POWERUP_SHIELD) {
     player.hasShield = true;
   } else if (type === POWERUP_FIREWALL) {
@@ -1028,7 +1028,7 @@ function applyPowerUp(player, type) {
       }
     }
     if (ownedTiles.length > 0) {
-      const center = ownedTiles[Math.floor(Math.random() * ownedTiles.length)];
+      const center = forcedCenter ?? ownedTiles[Math.floor(Math.random() * ownedTiles.length)];
       for (let dy = -REINFORCE_RADIUS; dy <= REINFORCE_RADIUS; dy++) {
         for (let dx = -REINFORCE_RADIUS; dx <= REINFORCE_RADIUS; dx++) {
           if (dx * dx + dy * dy > REINFORCE_RADIUS * REINFORCE_RADIUS + 1) continue;
@@ -1053,7 +1053,7 @@ function applyPowerUp(player, type) {
       }
     }
     if (opponentTiles.length > 0) {
-      const center = opponentTiles[Math.floor(Math.random() * opponentTiles.length)];
+      const center = forcedCenter ?? opponentTiles[Math.floor(Math.random() * opponentTiles.length)];
       for (let dy = -DRAIN_RADIUS; dy <= DRAIN_RADIUS; dy++) {
         for (let dx = -DRAIN_RADIUS; dx <= DRAIN_RADIUS; dx++) {
           if (dx * dx + dy * dy > DRAIN_RADIUS * DRAIN_RADIUS + 1) continue;
@@ -1089,7 +1089,32 @@ function processPendingPowerUps() {
     }
     player.pendingPowerUps = still;
     for (const p of ready) {
-      applyPowerUp(player, p.type);
+      if (onlineMode) {
+        // Remote player's power-ups are applied when their event arrives, not here
+        if (player !== players[localPlayerNum - 1]) continue;
+        // For random power-ups, pick the center locally and send it so both clients agree
+        let center = null;
+        if (p.type === POWERUP_REINFORCE || p.type === POWERUP_DRAIN) {
+          const pool = [];
+          if (p.type === POWERUP_REINFORCE) {
+            for (let y = 0; y < ROWS; y++)
+              for (let x = 0; x < COLS; x++)
+                if (board[y][x].owner === player.id && board[y][x].state === TILE_REVEALED && !board[y][x].reinforced)
+                  pool.push({ x, y });
+          } else {
+            const opp = players.find(pl => pl !== player);
+            for (let y = 0; y < ROWS; y++)
+              for (let x = 0; x < COLS; x++)
+                if (board[y][x].owner === opp.id && board[y][x].state === TILE_REVEALED)
+                  pool.push({ x, y });
+          }
+          if (pool.length > 0) center = pool[Math.floor(Math.random() * pool.length)];
+        }
+        sendGameEvent({ type: 'powerup_activate', puType: p.type, cx: center?.x ?? null, cy: center?.y ?? null });
+        applyPowerUp(player, p.type, center);
+      } else {
+        applyPowerUp(player, p.type);
+      }
     }
   }
 }
@@ -1525,6 +1550,11 @@ function handleRemoteEvent(ev) {
     case 'powerup_spawn':
       board[ev.y][ev.x].powerUp = ev.puType;
       break;
+    case 'powerup_activate': {
+      const center = ev.cx != null ? { x: ev.cx, y: ev.cy } : null;
+      applyPowerUp(remote, ev.puType, center);
+      break;
+    }
   }
 }
 
