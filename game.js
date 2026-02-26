@@ -85,6 +85,7 @@ function startGame() {
   winner = null;
   gameStartTime = performance.now();
   gameFinishTime = 0;
+  resolvedSafeTileCount = 0;
   rumbleTiles.clear();
   lastPowerUpSpawn = performance.now();
   generateBoard();
@@ -431,6 +432,7 @@ let gameStarted = false;
 let gameOver = false;
 let winner = null;
 let gameStartTime = 0;
+let resolvedSafeTileCount = 0;
 let gameFinishTime = 0;
 
 function formatTime(ms) {
@@ -723,6 +725,7 @@ function revealTile(x, y, player, isFloodFill) {
 
   // Reveal and claim
   tile.state = TILE_REVEALED;
+  resolvedSafeTileCount++;
   if (!isFloodFill) tile.revealAnimStart = performance.now();
   if (tile.owner === 0) {
     tile.owner = player.id;
@@ -753,7 +756,7 @@ function revealTile(x, y, player, isFloodFill) {
     }
   }
 
-  checkGameEnd();
+  if (!isFloodFill) checkGameEnd();
 }
 
 function handleMineHit(x, y, player) {
@@ -778,6 +781,7 @@ function handleMineHit(x, y, player) {
         const neighbor = board[ny][nx];
         if (neighbor.state === TILE_HIDDEN && neighbor.scorchedFor === 0) {
           neighbor.scorchedFor = 3; // 3 = scorched for both players
+          if (!neighbor.mine) resolvedSafeTileCount++;
         }
       }
     }
@@ -1143,8 +1147,8 @@ function aiAnalyzeBoard() {
   if (now - aiLastAnalysis < aiPreset.analysis) return;
   aiLastAnalysis = now;
 
-  aiMineMemory = [];
-  aiSafeMemory = [];
+  const mineSet = new Set();
+  const safeSet = new Set();
 
   for (let y = 0; y < ROWS; y++) {
     for (let x = 0; x < COLS; x++) {
@@ -1170,22 +1174,17 @@ function aiAnalyzeBoard() {
       const remainingMines = tile.adjacency - flaggedCount;
 
       if (remainingMines === hiddenNeighbors.length && remainingMines > 0) {
-        for (const n of hiddenNeighbors) {
-          if (!aiMineMemory.some(m => m.x === n.x && m.y === n.y)) {
-            aiMineMemory.push(n);
-          }
-        }
+        for (const n of hiddenNeighbors) mineSet.add(`${n.x},${n.y}`);
       }
 
       if (remainingMines === 0 && hiddenNeighbors.length > 0) {
-        for (const n of hiddenNeighbors) {
-          if (!aiSafeMemory.some(s => s.x === n.x && s.y === n.y)) {
-            aiSafeMemory.push(n);
-          }
-        }
+        for (const n of hiddenNeighbors) safeSet.add(`${n.x},${n.y}`);
       }
     }
   }
+
+  aiMineMemory = Array.from(mineSet).map(k => { const [x, y] = k.split(','); return { x: +x, y: +y }; });
+  aiSafeMemory = Array.from(safeSet).map(k => { const [x, y] = k.split(','); return { x: +x, y: +y }; });
 }
 
 function aiIsTargetStale() {
@@ -1424,7 +1423,7 @@ function countResolvedSafeTiles() {
 }
 
 function checkGameEnd() {
-  if (countResolvedSafeTiles() >= totalSafeTiles) {
+  if (resolvedSafeTileCount >= totalSafeTiles) {
     endGame();
   }
 }
@@ -2043,7 +2042,7 @@ function updateStatusText() {
     const now = performance.now();
     if (now - lastStatusUpdate > 100) {
       lastStatusUpdate = now;
-      el.textContent = `Tiles remaining: ${totalSafeTiles - countResolvedSafeTiles()}`;
+      el.textContent = `Tiles remaining: ${totalSafeTiles - resolvedSafeTileCount}`;
       if (timerEl && singlePlayer) timerEl.innerHTML = `Play Time<br>${formatTime(now - gameStartTime)}`;
     }
   }
