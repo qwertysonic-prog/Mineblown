@@ -2044,7 +2044,7 @@ function updateStatusText() {
     if (now - lastStatusUpdate > 100) {
       lastStatusUpdate = now;
       el.textContent = `Tiles remaining: ${totalSafeTiles - countResolvedSafeTiles()}`;
-      if (timerEl && singlePlayer) timerEl.textContent = formatTime(now - gameStartTime);
+      if (timerEl && singlePlayer) timerEl.innerHTML = `Play Time<br>${formatTime(now - gameStartTime)}`;
     }
   }
 }
