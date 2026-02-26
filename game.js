@@ -7,12 +7,38 @@ let canvas, ctx;
 // --- Audio ---
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 let sfxMuted = false;
-let musicMuted = true;
+let musicMuted = false;
+
+// --- Intro / Menu Music ---
+const introMusic = new Audio('music/intro.mp3');
+introMusic.loop = false;
+introMusic.volume = 0.4;
+
+// Autoplay on load; fall back to first user gesture if browser blocks it
+introMusic.play().catch(() => {
+  const onGesture = () => {
+    if (!gameStarted) introMusic.play().catch(() => {});
+    document.removeEventListener('click', onGesture);
+    document.removeEventListener('keydown', onGesture);
+    document.removeEventListener('touchstart', onGesture);
+  };
+  document.addEventListener('click', onGesture);
+  document.addEventListener('keydown', onGesture);
+  document.addEventListener('touchstart', onGesture);
+});
 
 // --- Background Music ---
 const bgMusic = new Audio('music/bg-music.mp3');
 bgMusic.loop = true;
 bgMusic.volume = 0.4;
+
+// --- Victory / Defeat Music ---
+const victoryMusic = new Audio('music/victory_music.mp3');
+victoryMusic.loop = false;
+victoryMusic.volume = 0.4;
+const defeatMusic = new Audio('music/defeat_music.mp3');
+defeatMusic.loop = false;
+defeatMusic.volume = 0.4;
 
 // --- Power-Up Sound ---
 const powerUpSound = new Audio('music/powerup.wav');
@@ -23,7 +49,7 @@ function toggleMusic() {
   if (musicMuted) {
     bgMusic.pause();
   } else {
-    bgMusic.play().catch(() => {});
+    if (gameStarted) bgMusic.play().catch(() => {});
   }
   // Sync all music toggle buttons
   document.querySelectorAll('#music-toggle, #music-toggle-game').forEach(btn => {
@@ -77,6 +103,8 @@ function startGame() {
   scaleCanvas();
 
   if (audioCtx.state === 'suspended') audioCtx.resume();
+  introMusic.pause();
+  introMusic.currentTime = 0;
   if (!musicMuted) bgMusic.play().catch(() => {});
 
   resetPlayers();
@@ -154,6 +182,10 @@ function returnToMenu() {
   singlePlayer = false;
   bgMusic.pause();
   bgMusic.currentTime = 0;
+  victoryMusic.pause();
+  victoryMusic.currentTime = 0;
+  defeatMusic.pause();
+  defeatMusic.currentTime = 0;
 
   clearTouchMovementKeys();
   const touchEl = document.getElementById('touch-controls');
@@ -1448,6 +1480,11 @@ function endGame() {
   } else {
     winner = 0; // tie
   }
+  bgMusic.pause();
+  bgMusic.currentTime = 0;
+  const isDefeat = (singlePlayer && winner === 1) ||
+                   (onlineMode && winner !== 0 && winner !== localPlayerNum);
+  if (!musicMuted) (isDefeat ? defeatMusic : victoryMusic).play().catch(() => {});
   playSound('gameOver');
   updateStatusText();
 }
