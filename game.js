@@ -111,7 +111,16 @@ function startGame() {
   if (isMobile) {
     setupTouchControls();
     document.getElementById('touch-controls').style.display = 'flex';
-    document.getElementById('touch-p1').style.display = singlePlayer ? 'none' : 'flex';
+    document.getElementById('touch-p1').style.display = (singlePlayer || onlineMode) ? 'none' : 'flex';
+    const p2Panel = document.getElementById('touch-p2');
+    const p2Label = document.querySelector('#touch-p2 .touch-panel-label');
+    if (onlineMode) {
+      p2Label.textContent = `P${localPlayerNum}`;
+      p2Panel.classList.toggle('online-as-p1', localPlayerNum === 1);
+    } else {
+      p2Label.textContent = 'P2';
+      p2Panel.classList.remove('online-as-p1');
+    }
   }
 
   if (!gameLoopRunning) {
