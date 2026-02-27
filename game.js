@@ -172,6 +172,7 @@ function startSinglePlayer(difficulty) {
 }
 
 function returnToMenu() {
+  document.getElementById('main-menu-btn').style.display = 'none';
   if (socket) { socket.onclose = null; socket.close(); socket = null; }
   onlineMode = false;
   localPlayerNum = 0;
@@ -1488,6 +1489,7 @@ function endGame() {
   if (!musicMuted) (isDefeat ? defeatMusic : victoryMusic).play().catch(() => {});
   playSound('gameOver');
   updateStatusText();
+  document.getElementById('main-menu-btn').style.display = 'block';
 }
 
 // ============================================================
@@ -1632,6 +1634,7 @@ function startOnlineGame(matchType) {
       opponentLeft = true;
       gameOver = true;
       clearTouchMovementKeys();
+      document.getElementById('main-menu-btn').style.display = 'block';
     }
   };
 }
@@ -1669,6 +1672,7 @@ function handleMatchmakingMessage(e) {
         opponentLeft = true;
         gameOver = true;
         clearTouchMovementKeys();
+        document.getElementById('main-menu-btn').style.display = 'block';
       }
     };
     startGame();
@@ -2001,9 +2005,6 @@ function drawGameOverOverlay() {
     ctx.fillStyle = '#fff';
     ctx.font = 'bold 28px sans-serif';
     ctx.fillText('Opponent disconnected', centerX, centerY - 20);
-    ctx.fillStyle = '#aaa';
-    ctx.font = '16px sans-serif';
-    ctx.fillText('Press SPACE to return to menu', centerX, centerY + 20);
     return;
   }
 
@@ -2031,9 +2032,6 @@ function drawGameOverOverlay() {
     ctx.fillText(`Time: ${formatTime(gameFinishTime - gameStartTime)}`, centerX, centerY + 35);
   }
 
-  ctx.fillStyle = '#777';
-  ctx.font = '14px sans-serif';
-  ctx.fillText('Press SPACE to return to menu', centerX, centerY + (singlePlayer ? 60 : 45));
 }
 
 
