@@ -92,20 +92,6 @@ body {
   border-color: #8a8aaa;
 }
 
-.debug-btn {
-  background: #2a1a1a;
-  color: #f66;
-  border: 1px solid #633;
-  border-radius: 4px;
-  padding: 4px 10px;
-  font-size: 11px;
-  font-family: inherit;
-  cursor: pointer;
-  opacity: 0.7;
-}
-
-.debug-btn:hover { opacity: 1; }
-
 #bottom-bar {
   display: flex;
   justify-content: space-around;

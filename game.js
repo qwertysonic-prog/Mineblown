@@ -171,13 +171,6 @@ function startSinglePlayer(difficulty) {
   startGame();
 }
 
-function debugEndGame(win) {
-  if (!gameStarted || gameOver) return;
-  const localIdx = onlineMode ? localPlayerNum - 1 : 1; // SP/online: you're P2 or localPlayerNum
-  players[localIdx].score     = win ? 9999 : 0;
-  players[1 - localIdx].score = win ? 0    : 9999;
-  endGame();
-}
 
 function returnToMenu() {
   document.getElementById('main-menu-btn').style.display = 'none';
