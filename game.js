@@ -1470,6 +1470,7 @@ function checkGameEnd() {
 }
 
 function endGame() {
+  if (gameOver) return;
   gameOver = true;
   gameFinishTime = performance.now();
   clearTouchMovementKeys();
