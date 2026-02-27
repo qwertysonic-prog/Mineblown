@@ -83,6 +83,8 @@ function showMenu(screen) {
     document.getElementById('menu-single-player').style.display = 'flex';
   } else if (screen === 'online') {
     document.getElementById('menu-online').style.display = 'flex';
+  } else if (screen === 'highscores') {
+    document.getElementById('menu-highscores').style.display = 'flex';
   }
 }
 
@@ -111,6 +113,7 @@ function startGame() {
   gameStarted = true;
   gameOver = false;
   winner = null;
+  lastHighScoreRank = null;
   gameStartTime = performance.now();
   gameFinishTime = 0;
   resolvedSafeTileCount = 0;
@@ -483,6 +486,56 @@ function formatTime(ms) {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
+// --- High Scores ---
+const HS_KEY = 'mineblown_highscores';
+let lastHighScoreRank = null;
+
+function loadHighScores() {
+  try {
+    const data = JSON.parse(localStorage.getItem(HS_KEY));
+    return (data && !Array.isArray(data)) ? data : {};
+  }
+  catch { return {}; }
+}
+
+function saveHighScore(ms, difficulty) {
+  const all = loadHighScores();
+  const scores = all[difficulty] || [];
+  const entry = {
+    time: ms,
+    date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+  };
+  scores.push(entry);
+  scores.sort((a, b) => a.time - b.time);
+  const rank = scores.indexOf(entry) + 1;
+  scores.splice(10);
+  all[difficulty] = scores;
+  localStorage.setItem(HS_KEY, JSON.stringify(all));
+  return rank <= 10 ? rank : null;
+}
+
+function showHighScoresPanel() {
+  const all = loadHighScores();
+  const list = document.getElementById('highscores-list');
+  const difficulties = ['practice', 'easy', 'medium', 'hard'];
+  const sections = difficulties
+    .filter(diff => all[diff]?.length > 0)
+    .map(diff => {
+      const rows = all[diff].map((s, i) => `
+        <div class="hs-row">
+          <span class="hs-rank">#${i + 1}</span>
+          <span class="hs-time">${formatTime(s.time)}</span>
+          <span class="hs-date">${s.date}</span>
+        </div>`).join('');
+      return `<div class="hs-section">
+        <h3 class="hs-difficulty-header">${diff.charAt(0).toUpperCase() + diff.slice(1)}</h3>
+        ${rows}
+      </div>`;
+    }).join('');
+  list.innerHTML = sections || '<p style="color:#888; text-align:center; padding:16px 0;">No scores yet.<br>Complete a single player game to set a record!</p>';
+  showMenu('highscores');
 }
 
 // --- Power-Up State ---
@@ -1488,6 +1541,9 @@ function endGame() {
   const isDefeat = (singlePlayer && winner === 1) ||
                    (onlineMode && winner !== 0 && winner !== localPlayerNum);
   if (!musicMuted) (isDefeat ? defeatMusic : victoryMusic).play().catch(() => {});
+  if (singlePlayer && winner === 2) {
+    lastHighScoreRank = saveHighScore(gameFinishTime - gameStartTime, aiDifficulty);
+  }
   playSound('gameOver');
   updateStatusText();
   document.getElementById('main-menu-btn').style.display = 'block';
@@ -2031,6 +2087,12 @@ function drawGameOverOverlay() {
     ctx.fillStyle = '#888';
     ctx.font = '15px sans-serif';
     ctx.fillText(`Time: ${formatTime(gameFinishTime - gameStartTime)}`, centerX, centerY + 35);
+  }
+
+  if (lastHighScoreRank) {
+    ctx.fillStyle = '#ffd700';
+    ctx.font = 'bold 15px sans-serif';
+    ctx.fillText(`New High Score  #${lastHighScoreRank}!`, centerX, centerY + 58);
   }
 
 }
