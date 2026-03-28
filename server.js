@@ -1,41 +1,11 @@
 const http = require('http');
-const fs   = require('fs');
-const path = require('path');
 const { WebSocketServer } = require('ws');
 
 const PORT = process.env.PORT || 3001;
 
-// ── Static file server ────────────────────────────────────────────────────────
-const MIME = {
-  '.html': 'text/html',
-  '.js':   'application/javascript',
-  '.css':  'text/css',
-  '.png':  'image/png',
-  '.jpg':  'image/jpeg',
-  '.gif':  'image/gif',
-  '.ico':  'image/x-icon',
-  '.mp3':  'audio/mpeg',
-  '.wav':  'audio/wav',
-  '.ogg':  'audio/ogg',
-};
-
 const server = http.createServer((req, res) => {
-  let urlPath = req.url.split('?')[0];
-  if (urlPath === '/' || urlPath === '') urlPath = '/index.html';
-
-  const filePath = path.join(__dirname, urlPath);
-
-  // Prevent directory traversal outside project root
-  if (!filePath.startsWith(__dirname + path.sep) && filePath !== __dirname) {
-    res.writeHead(403); res.end(); return;
-  }
-
-  fs.readFile(filePath, (err, data) => {
-    if (err) { res.writeHead(404); res.end('Not found'); return; }
-    const ext = path.extname(filePath).toLowerCase();
-    res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' });
-    res.end(data);
-  });
+  res.writeHead(200);
+  res.end('Mineblown relay server');
 });
 
 // ── WebSocket relay ───────────────────────────────────────────────────────────
