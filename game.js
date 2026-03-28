@@ -550,7 +550,7 @@ let onlineMode = false;
 let socket = null;
 let localPlayerNum = 0;   // 1 or 2 when in online mode
 let opponentLeft = false;
-const WS_URL = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host;
+const WS_URL = 'wss://mineblown.onrender.com';
 
 const AI_PRESETS = {
   practice: { tick: 450, analysis: 4000, mistake: 0.40, flagChance: 0.40, hesitateChance: 0.45, hesitateDur: [300, 600], atkSkip: 0.90, atkMinTiles: 20, precisionDist: 3, precisionTiles: 30, precisionMines: 4, randomTiles: 25, randomMines: 5, stockpileMines: 6 },
